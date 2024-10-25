@@ -124,6 +124,34 @@ class DatabaseHelper {
     return {};
   }
 
+  // update task completion status
+  Future<Map<String, dynamic>> updateTaskCompletion(String taskId) async {
+    final db = await database;
+
+    // Fetch the current task details
+    List<Map<String, dynamic>> tasks = await db.query(
+      'Task',
+      where: 'id = ?',
+      whereArgs: [taskId],
+    );
+
+    if (tasks.isNotEmpty) {
+      // Update the task with the new total time
+      await db.update(
+        'Task',
+        {'isComplete': 1},
+        where: 'id = ?',
+        whereArgs: [taskId],
+      );
+
+      // Optionally, return the updated task
+      return {'id': taskId, 'isComplete': 1};
+    }
+
+    // Return an empty map if the task does not exist
+    return {};
+  }
+
   // Delete a task and its associated activities
   Future<int> deleteTask(int taskId) async {
     final db = await database;
