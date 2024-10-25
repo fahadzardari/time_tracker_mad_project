@@ -1,20 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:time_tracker_mad_project/screens/task_detail.dart';
+import '../db/db.services.dart';
+import '../db/models/Task.dart';
 
-class Task {
-  final String title;
-  final String timeSpent;
-  final bool isCompleted;
-
-  Task({required this.title, required this.timeSpent, required this.isCompleted});
+class Home extends StatefulWidget {
+  @override
+  _HomeState createState() => _HomeState();
 }
 
-class Home extends StatelessWidget{
-   final List<Task> tasks = [
-    Task(title: 'Task 1', timeSpent: '1 hour', isCompleted: false),
-    Task(title: 'Task 2', timeSpent: '30 mins', isCompleted: true),
-    Task(title: 'Task 3', timeSpent: '2 hours', isCompleted: false),
-  ];
+class _HomeState extends State<Home> {
+  final DatabaseHelper db = DatabaseHelper();
+  List<Task> tasks = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _getTasks();
+  }
+
+  Future<void> _getTasks() async {
+    List<Map<String, dynamic>> res = await db.getTasks();
+    setState(() {
+      tasks = res.map((taskMap) => Task.fromMap(taskMap)).toList();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,30 +35,33 @@ class Home extends StatelessWidget{
       ),
       body: SafeArea(
         child: Center(
-          child: Expanded(
-            child: ListView.builder(
-              itemCount: tasks.length,
-              itemBuilder: (context, index) {
-                final task = tasks[index];
-                return ListTile(
-                  title: Text(task.title),
-                  subtitle: Text('Time Spent: ${task.timeSpent}'),
-                  trailing: Icon(
-                    task.isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
-                    color: task.isCompleted ? Colors.green : Colors.grey,
-                  ),
-                  onTap: () {
-                    Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => TaskDetail(task: task),
-                    ),
-                  );
+          child: tasks.isEmpty
+              ? Text(
+                  "No tasks yet!!!") // Show loading indicator while tasks are being fetched
+              : ListView.builder(
+                  itemCount: tasks.length,
+                  itemBuilder: (context, index) {
+                    final task = tasks[index];
+                    return ListTile(
+                      title: Text(task.title),
+                      subtitle: Text('Time Spent: ${task.totalTime}'),
+                      trailing: Icon(
+                        task.isComplete
+                            ? Icons.check_circle
+                            : Icons.radio_button_unchecked,
+                        color: task.isComplete ? Colors.green : Colors.grey,
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TaskDetail(task: task),
+                          ),
+                        ).then((_) async => {await _getTasks()});
+                      },
+                    );
                   },
-                );
-              },
-            ),
-          )
+                ),
         ),
       ),
       floatingActionButton: FloatingActionButton(

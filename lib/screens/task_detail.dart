@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:time_tracker_mad_project/db/models/Activity.dart';
 import 'package:time_tracker_mad_project/screens/home.dart';
+import '../db/models/Task.dart';
+import '../db/db.services.dart'; // Import your database services
 
 class TaskDetail extends StatefulWidget {
   final Task task;
@@ -15,10 +17,28 @@ class TaskDetail extends StatefulWidget {
 class _TaskDetailState extends State<TaskDetail> {
   Timer? _timer;
   bool _isRunning = false;
-  int _elapsedSeconds = 0;
+  int _elapsedSeconds = 0; // Total time for the task
+  int _lapSeconds = 0; // Current lap time
   List<Activity> _activityLogs = [];
-
   DateTime? _startTime;
+  DatabaseHelper db = DatabaseHelper();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchActivities();
+    _elapsedSeconds = widget.task.totalTime; // Assuming totalTime is a property in Task
+  }
+
+  // Fetch activities for the specific task
+  _fetchActivities() async {
+    List<Map<String, dynamic>> res =
+        await db.getActivitiesForTask(widget.task.title);
+    setState(() {
+      _activityLogs =
+          res.map((activityMap) => Activity.fromMap(activityMap)).toList();
+    });
+  }
 
   // Start the timer
   void _startTimer() {
@@ -30,12 +50,13 @@ class _TaskDetailState extends State<TaskDetail> {
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
         _elapsedSeconds++;
+        _lapSeconds++; // Increment the lap timer
       });
     });
   }
-  
+
   // Stop the timer and log the activity
-  void _stopTimer() {
+  void _stopTimer() async {
     if (_timer != null) {
       _timer!.cancel();
     }
@@ -46,17 +67,18 @@ class _TaskDetailState extends State<TaskDetail> {
     // Create a new activity log entry
     Activity activity = Activity(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      task_id: widget.task.title,
-      start_time: _startTime!,
-      end_time: endTime,
-      duration: _formatDuration(duration),
+      taskId: widget.task.title,
+      startTime: _startTime!,
+      endTime: endTime,
+      duration: duration.inSeconds, // Lap time for activity
       notes: null,
     );
 
+    await db.insertActivity(activity.toMap(), widget.task.id);
+    await _fetchActivities();
     setState(() {
       _isRunning = false;
-      _elapsedSeconds = 0;
-      _activityLogs.add(activity);
+      _lapSeconds = 0; // Reset lap time after stopping
     });
   }
 
@@ -69,13 +91,19 @@ class _TaskDetailState extends State<TaskDetail> {
     return "$hours:$minutes:$seconds";
   }
 
-  // Display the formatted timer
-  String get _formattedElapsedTime {
-    Duration elapsed = Duration(seconds: _elapsedSeconds);
-    return _formatDuration(elapsed);
+  // Display the formatted total elapsed time
+  String get _formattedTotalTime {
+    Duration totalDuration = Duration(seconds: _elapsedSeconds);
+    return _formatDuration(totalDuration);
   }
-  
-   @override
+
+  // Display the formatted lap time
+  String get _formattedLapTime {
+    Duration lapDuration = Duration(seconds: _lapSeconds);
+    return _formatDuration(lapDuration);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -86,11 +114,20 @@ class _TaskDetailState extends State<TaskDetail> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Timer display
+            // Total time display
             Center(
               child: Text(
-                _formattedElapsedTime,
+                _formattedTotalTime,
                 style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+              ),
+            ),
+            SizedBox(height: 20),
+
+            // Lap time display
+            Center(
+              child: Text(
+                _formattedLapTime,
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.grey),
               ),
             ),
             SizedBox(height: 20),
@@ -128,9 +165,10 @@ class _TaskDetailState extends State<TaskDetail> {
                       itemBuilder: (context, index) {
                         final activity = _activityLogs[index];
                         return ListTile(
-                          title: Text('Start: ${activity.start_time}'),
-                          subtitle: Text('Duration: ${activity.duration}'),
-                          trailing: Text('End: ${activity.end_time}'),
+                          title: Text('Start: ${activity.startTime}'),
+                          subtitle:
+                              Text('Duration: ${activity.duration} seconds'),
+                          trailing: Text('End: ${activity.endTime}'),
                         );
                       },
                     ),
