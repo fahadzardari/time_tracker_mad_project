@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:time_tracker_mad_project/db/db.services.dart';
 import 'package:time_tracker_mad_project/db/models/Task.dart';
-import 'package:uuid/uuid.dart'; // Make sure to import the correct uuid package
+import 'package:uuid/uuid.dart';
 
 class CreateTask extends StatelessWidget {
   final _key = GlobalKey<FormState>();
@@ -15,21 +15,35 @@ class CreateTask extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Task'),
+        title: const Text(
+          'Create Task',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
-        backgroundColor: Colors.amberAccent,
+        backgroundColor: Colors.teal,
+        elevation: 2,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _key,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Title field with validation
               TextFormField(
                 controller: titleController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Title',
+                  labelStyle: TextStyle(color: Colors.white),
+                  filled: true,
+                  fillColor: Colors.grey[850],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -40,11 +54,17 @@ class CreateTask extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // Description field with validation
               TextFormField(
                 controller: descController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Description',
+                  labelStyle: TextStyle(color: Colors.white),
+                  filled: true,
+                  fillColor: Colors.grey[850],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -55,11 +75,17 @@ class CreateTask extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // Tag field with validation
               TextFormField(
                 controller: tagController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Tag',
+                  labelStyle: TextStyle(color: Colors.white),
+                  filled: true,
+                  fillColor: Colors.grey[850],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -70,9 +96,17 @@ class CreateTask extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // Dropdown for priority selection
               DropdownButtonFormField<int>(
-                decoration: const InputDecoration(labelText: 'Priority'),
+                decoration: InputDecoration(
+                  labelText: 'Priority',
+                  labelStyle: TextStyle(color: Colors.white),
+                  filled: true,
+                  fillColor: Colors.grey[850],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
                 value: priority,
                 items: [
                   DropdownMenuItem(child: Text('Low'), value: 1),
@@ -93,32 +127,49 @@ class CreateTask extends StatelessWidget {
               ),
               const SizedBox(height: 32),
 
-              // Create Task button
-              ElevatedButton(
-                onPressed: () async {
-                  if (_key.currentState!.validate()) {
-                    // Save task to database
-                    await _dbHelper.insertTask({
-                      'id': Uuid()
-                          .v4(), // Use the correct method to generate UUID
-                      'title': titleController.text,
-                      'description': descController.text,
-                      'createdAt': DateTime.now().toIso8601String(),
-                      'isComplete': false,
-                      'totalTime': 0,
-                      'priority': priority,
-                      'tag': tagController.text // Save the tag from controller
-                    });
+              Center(
+                child: ElevatedButton(
+                  onPressed: () async {
+                    if (_key.currentState!.validate()) {
+                      // Save task to database
+                      await _dbHelper.insertTask({
+                        'id': Uuid().v4(),
+                        'title': titleController.text,
+                        'description': descController.text,
+                        'createdAt': DateTime.now().toIso8601String(),
+                        'isComplete': false,
+                        'totalTime': 0,
+                        'priority': priority,
+                        'tag': tagController.text
+                      });
 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Succesfully Added Task")));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text("Successfully Added Task"),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
 
-                    Navigator.pushNamed(context, "/");
-                  }
-                },
-                child: const Text('Create Task'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.yellow,
+                      Navigator.pushNamed(context, "/");
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+
+                    backgroundColor: Colors.teal,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 32.0, vertical: 12.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                  ),
+                  child: const Text(
+                    'Create Task',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16.0,
+                    ),
+                  ),
                 ),
               ),
             ],

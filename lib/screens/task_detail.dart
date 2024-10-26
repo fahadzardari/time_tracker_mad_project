@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:time_tracker_mad_project/db/models/Activity.dart';
-import 'package:time_tracker_mad_project/screens/home.dart';
 import '../db/models/Task.dart';
-import '../db/db.services.dart'; // Import your database services
+import '../db/db.services.dart';
+import 'package:intl/intl.dart';
 
 class TaskDetail extends StatefulWidget {
   final Task task;
@@ -17,20 +17,20 @@ class TaskDetail extends StatefulWidget {
 class _TaskDetailState extends State<TaskDetail> {
   Timer? _timer;
   bool _isRunning = false;
-  int _elapsedSeconds = 0; // Total time for the task
-  int _lapSeconds = 0; // Current lap time
+  int _elapsedSeconds = 0;
+  int _lapSeconds = 0;
   List<Activity> _activityLogs = [];
   DateTime? _startTime;
   DatabaseHelper db = DatabaseHelper();
+  final DateFormat formatter = DateFormat('HH:mm:ss dd-MM-yyyy');
 
   @override
   void initState() {
     super.initState();
     _fetchActivities();
-    _elapsedSeconds = widget.task.totalTime; // Assuming totalTime is a property in Task
+    _elapsedSeconds = widget.task.totalTime;
   }
 
-  // Fetch activities for the specific task
   _fetchActivities() async {
     List<Map<String, dynamic>> res =
         await db.getActivitiesForTask(widget.task.title);
@@ -40,7 +40,6 @@ class _TaskDetailState extends State<TaskDetail> {
     });
   }
 
-  // Start the timer
   void _startTimer() {
     setState(() {
       _isRunning = true;
@@ -50,27 +49,23 @@ class _TaskDetailState extends State<TaskDetail> {
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
         _elapsedSeconds++;
-        _lapSeconds++; // Increment the lap timer
+        _lapSeconds++;
       });
     });
   }
 
-  // Stop the timer and log the activity
   void _stopTimer() async {
-    if (_timer != null) {
-      _timer!.cancel();
-    }
+    if (_timer != null) _timer!.cancel();
 
     DateTime endTime = DateTime.now();
     Duration duration = endTime.difference(_startTime!);
 
-    // Create a new activity log entry
     Activity activity = Activity(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       taskId: widget.task.title,
       startTime: _startTime!,
       endTime: endTime,
-      duration: duration.inSeconds, // Lap time for activity
+      duration: duration.inSeconds,
       notes: null,
     );
 
@@ -78,36 +73,43 @@ class _TaskDetailState extends State<TaskDetail> {
     await _fetchActivities();
     setState(() {
       _isRunning = false;
-      _lapSeconds = 0; // Reset lap time after stopping
+      _lapSeconds = 0;
     });
   }
 
-  // Format the duration to a readable format
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
-    String hours = twoDigits(duration.inHours);
-    String minutes = twoDigits(duration.inMinutes.remainder(60));
-    String seconds = twoDigits(duration.inSeconds.remainder(60));
-    return "$hours:$minutes:$seconds";
+    return "${twoDigits(duration.inHours)}:${twoDigits(duration.inMinutes.remainder(60))}:${twoDigits(duration.inSeconds.remainder(60))}";
   }
 
-  // Display the formatted total elapsed time
-  String get _formattedTotalTime {
-    Duration totalDuration = Duration(seconds: _elapsedSeconds);
-    return _formatDuration(totalDuration);
+  String _formatActivityDuration(int seconds) {
+  if (seconds < 60) {
+    return '$seconds seconds';
+  } else if (seconds < 3600) { // Less than 60 minutes
+    final minutes = (seconds / 60).floor();
+    final remainingSeconds = seconds % 60;
+    return '$minutes minutes ${remainingSeconds} seconds';
+  } else { // 60 minutes or more
+    final hours = (seconds / 3600).floor();
+    final minutes = ((seconds % 3600) / 60).floor();
+    final remainingSeconds = seconds % 60;
+    return '$hours hours $minutes minutes ${remainingSeconds} seconds';
   }
+}
 
-  // Display the formatted lap time
-  String get _formattedLapTime {
-    Duration lapDuration = Duration(seconds: _lapSeconds);
-    return _formatDuration(lapDuration);
-  }
+
+  String get _formattedTotalTime =>
+      _formatDuration(Duration(seconds: _elapsedSeconds));
+  String get _formattedLapTime =>
+      _formatDuration(Duration(seconds: _lapSeconds));
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.task.title),
+        title: Text(widget.task.title, style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.teal,
+        centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -118,16 +120,22 @@ class _TaskDetailState extends State<TaskDetail> {
             Center(
               child: Text(
                 _formattedTotalTime,
-                style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 48,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal.shade700,
+                ),
               ),
             ),
-            SizedBox(height: 20),
-
-            // Lap time display
+            SizedBox(height: 10),
             Center(
               child: Text(
                 _formattedLapTime,
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey,
+                ),
               ),
             ),
             SizedBox(height: 20),
@@ -138,37 +146,69 @@ class _TaskDetailState extends State<TaskDetail> {
               children: [
                 ElevatedButton(
                   onPressed: _isRunning ? null : _startTimer,
-                  child: Text('Start'),
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                  child: Text('Start', style: TextStyle(fontSize: 16)),
                 ),
                 SizedBox(width: 20),
                 ElevatedButton(
                   onPressed: _isRunning ? _stopTimer : null,
-                  child: Text('Stop'),
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                  child: Text('Stop', style: TextStyle(fontSize: 16)),
                 ),
               ],
             ),
-            SizedBox(height: 40),
+            SizedBox(height: 30),
 
             // Activity logs header
             Text(
               'Activity Logs',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal.shade900),
             ),
             SizedBox(height: 10),
 
             // Activity logs list
             Expanded(
               child: _activityLogs.isEmpty
-                  ? Center(child: Text('No activities logged yet.'))
+                  ? Center(
+                      child: Text('No activities logged yet.',
+                          style: TextStyle(fontSize: 16, color: Colors.grey)))
                   : ListView.builder(
                       itemCount: _activityLogs.length,
                       itemBuilder: (context, index) {
                         final activity = _activityLogs[index];
-                        return ListTile(
-                          title: Text('Start: ${activity.startTime}'),
-                          subtitle:
-                              Text('Duration: ${activity.duration} seconds'),
-                          trailing: Text('End: ${activity.endTime}'),
+                        return Card(
+                          margin: EdgeInsets.symmetric(vertical: 8.0),
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.0),
+                          ),
+                          child: ListTile(
+                            leading:
+                                Icon(Icons.timer, color: Colors.teal.shade700),
+                            title: Text(
+                              'Start: ${formatter.format(activity.startTime)}',
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.w500),
+                            ),
+                            subtitle: Text(
+                              'Duration: ${_formatActivityDuration(activity.duration)} \nEnd: ${formatter.format(activity.endTime)}',
+                              style: TextStyle(
+                                  fontSize: 14, color: Colors.grey.shade700),
+                            ),
+                          ),
                         );
                       },
                     ),

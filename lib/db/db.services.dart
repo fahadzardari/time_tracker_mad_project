@@ -125,7 +125,8 @@ class DatabaseHelper {
   }
 
   // update task completion status
-  Future<Map<String, dynamic>> updateTaskCompletion(String taskId) async {
+  Future<Map<String, dynamic>> updateTaskCompletion(
+      String taskId, bool isComplete) async {
     final db = await database;
 
     // Fetch the current task details
@@ -139,7 +140,7 @@ class DatabaseHelper {
       // Update the task with the new total time
       await db.update(
         'Task',
-        {'isComplete': 1},
+        {'isComplete': isComplete ? 1 : 0},
         where: 'id = ?',
         whereArgs: [taskId],
       );
@@ -153,7 +154,7 @@ class DatabaseHelper {
   }
 
   // Delete a task and its associated activities
-  Future<int> deleteTask(int taskId) async {
+  Future<int> deleteTask(String taskId) async {
     final db = await database;
     return await db.delete('Task', where: 'id = ?', whereArgs: [taskId]);
   }
