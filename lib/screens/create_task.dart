@@ -17,7 +17,7 @@ class CreateTask extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Create Task'),
         centerTitle: true,
-        backgroundColor: Colors.blueGrey,
+        backgroundColor: Colors.amberAccent,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -91,7 +91,7 @@ class CreateTask extends StatelessWidget {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 32),
 
               // Create Task button
               ElevatedButton(
@@ -117,6 +117,9 @@ class CreateTask extends StatelessWidget {
                   }
                 },
                 child: const Text('Create Task'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.yellow,
+                ),
               ),
             ],
           ),

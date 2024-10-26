@@ -68,7 +68,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       appBar: AppBar(
         title: const Text('Home'),
         centerTitle: true,
-        backgroundColor: Colors.blueGrey,
+        backgroundColor: Colors.amberAccent,
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -143,7 +143,8 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
           Navigator.pushNamed(context, '/create_task');
         },
         child: const Icon(Icons.add),
-        backgroundColor: Colors.blueGrey,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        backgroundColor: Colors.amberAccent,
       ),
     );
   }
