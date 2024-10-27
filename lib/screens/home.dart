@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:time_tracker_mad_project/screens/task_detail.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../db/db.services.dart';
 import '../db/models/Task.dart';
 
@@ -12,13 +14,34 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   final DatabaseHelper db = DatabaseHelper();
   List<Task> tasks = [];
   late TabController _tabController;
-  String? selectedTag; 
+  String? selectedTag;
+  String? motivationalQuote; // Holds the quote text
+  bool showOverlay = true; // Controls overlay visibility
 
   @override
   void initState() {
     super.initState();
     _getTasks();
+    _fetchMotivationalQuote();
     _tabController = TabController(length: 2, vsync: this);
+  }
+
+  Future<void> _fetchMotivationalQuote() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://zenquotes.io/api/random'),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          motivationalQuote = data[0]['q']; // Extracting the quote
+        });
+      } else {
+        print("Failed to load quote");
+      }
+    } catch (e) {
+      print("Error fetching quote: $e");
+    }
   }
 
   Future<void> _getTasks() async {
@@ -85,7 +108,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   }
 
   Future<void> markTaskIncomplete(String taskId) async {
-    await db.updateTaskCompletion(taskId, false); 
+    await db.updateTaskCompletion(taskId, false);
     await _getTasks();
   }
 
@@ -132,147 +155,185 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
           ],
         ),
       ),
-      body: SafeArea(
-        child: TabBarView(
-          controller: _tabController,
-          children: [
-            Column(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: TabBarView(
+              controller: _tabController,
               children: [
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: tags.map((tag) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                        child: ChoiceChip(
-                          label: Text(
-                            tag ?? "",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          selected: selectedTag == tag,
-                          selectedColor: Colors.teal[700],
-                          backgroundColor: Colors.grey[800],
-                          onSelected: (isSelected) {
-                            setState(() {
-                              selectedTag = isSelected ? tag : null;
-                            });
-                          },
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                Expanded(
-                  child: tasks.isEmpty
-                      ? const Center(
-                          child: Text(
-                            "No tasks yet!!!",
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                        )
-                      : ListView.builder(
-                          itemCount: tasks
-                              .where((task) =>
-                                  !task.isComplete &&
-                                  (selectedTag == null ||
-                                      task.tag == selectedTag))
-                              .length,
-                          itemBuilder: (context, index) {
-                            final task = tasks
-                                .where((task) =>
-                                    !task.isComplete &&
-                                    (selectedTag == null ||
-                                        task.tag == selectedTag))
-                                .toList()[index];
-                            return ListTile(
-                              tileColor: Colors.grey[850],
-                              title: Text(
-                                task.title,
+                Column(
+                  children: [
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: tags.map((tag) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                            child: ChoiceChip(
+                              label: Text(
+                                tag ?? "",
                                 style: TextStyle(color: Colors.white),
                               ),
-                              subtitle: Text(
-                                'Time Spent: ${_formattedTotalTime(task.totalTime)}',
-                                style: TextStyle(color: Colors.grey[400]),
-                              ),
-                              trailing: IconButton(
-                                icon: Icon(
-                                  Icons.check_circle_outline,
-                                  color: Colors.amberAccent,
-                                ),
-                                onPressed: () => completeTask(task.id),
-                              ),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        TaskDetail(task: task),
-                                  ),
-                                ).then((_) async => {await _getTasks()});
+                              selected: selectedTag == tag,
+                              selectedColor: Colors.teal[700],
+                              backgroundColor: Colors.grey[800],
+                              onSelected: (isSelected) {
+                                setState(() {
+                                  selectedTag = isSelected ? tag : null;
+                                });
                               },
-                            );
-                          },
-                        ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    Expanded(
+                      child: tasks.isEmpty
+                          ? const Center(
+                              child: Text(
+                                "No tasks yet!!!",
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: tasks
+                                  .where((task) =>
+                                      !task.isComplete &&
+                                      (selectedTag == null ||
+                                          task.tag == selectedTag))
+                                  .length,
+                              itemBuilder: (context, index) {
+                                final task = tasks
+                                    .where((task) =>
+                                        !task.isComplete &&
+                                        (selectedTag == null ||
+                                            task.tag == selectedTag))
+                                    .toList()[index];
+                                return ListTile(
+                                  tileColor: Colors.grey[850],
+                                  title: Text(
+                                    task.title,
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                  subtitle: Text(
+                                    'Time Spent: ${_formattedTotalTime(task.totalTime)}',
+                                    style: TextStyle(color: Colors.grey[400]),
+                                  ),
+                                  trailing: IconButton(
+                                    icon: Icon(
+                                      Icons.check_circle_outline,
+                                      color: Colors.amberAccent,
+                                    ),
+                                    onPressed: () => completeTask(task.id),
+                                  ),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            TaskDetail(task: task),
+                                      ),
+                                    ).then((_) async => {await _getTasks()});
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
                 ),
+                tasks.isEmpty
+                    ? const Center(
+                        child: Text(
+                          "No tasks yet!!!",
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: tasks.where((task) => task.isComplete).length,
+                        itemBuilder: (context, index) {
+                          final task = tasks
+                              .where((task) => task.isComplete)
+                              .toList()[index];
+                          return ListTile(
+                            tileColor: Colors.grey[850],
+                            title: Text(
+                              task.title,
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            subtitle: Text(
+                              'Time Spent: ${_formattedTotalTime(task.totalTime)}',
+                              style: TextStyle(color: Colors.grey[400]),
+                            ),
+                            trailing: Wrap(
+                              spacing: 8,
+                              children: [
+                                IconButton(
+                                  icon: Icon(Icons.undo,
+                                      color: Colors.amberAccent),
+                                  onPressed: () => markTaskIncomplete(task.id),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.delete,
+                                      color: Colors.redAccent),
+                                  onPressed: () => deleteTask(task.id),
+                                ),
+                              ],
+                            ),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => TaskDetail(task: task),
+                                ),
+                              ).then((_) async => {await _getTasks()});
+                            },
+                          );
+                        },
+                      ),
               ],
             ),
-            tasks.isEmpty
-                ? const Center(
-                    child: Text(
-                      "No tasks yet!!!",
-                      style: TextStyle(color: Colors.white70),
+          ),
+          if (showOverlay && motivationalQuote != null)
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                margin: const EdgeInsets.all(30),
+                decoration: BoxDecoration(
+                  color: Colors.black87,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      motivationalQuote!,
+                      style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 18,
+                          fontStyle: FontStyle.italic),
+                      textAlign: TextAlign.center,
                     ),
-                  )
-                : ListView.builder(
-                    itemCount: tasks.where((task) => task.isComplete).length,
-                    itemBuilder: (context, index) {
-                      final task = tasks
-                          .where((task) => task.isComplete)
-                          .toList()[index];
-                      return ListTile(
-                        tileColor: Colors.grey[850],
-                        title: Text(
-                          task.title,
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        subtitle: Text(
-                          'Time Spent: ${_formattedTotalTime(task.totalTime)}',
-                          style: TextStyle(color: Colors.grey[400]),
-                        ),
-                        trailing: Wrap(
-                          spacing: 8,
-                          children: [
-                            IconButton(
-                              icon: Icon(Icons.undo, color: Colors.amberAccent),
-                              onPressed: () => markTaskIncomplete(task.id),
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.delete, color: Colors.redAccent),
-                              onPressed: () => deleteTask(task.id),
-                            ),
-                          ],
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => TaskDetail(task: task),
-                            ),
-                          ).then((_) async => {await _getTasks()});
-                        },
-                      );
-                    },
-                  ),
-          ],
-        ),
+                    const SizedBox(height: 15),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          showOverlay = false;
+                        });
+                      },
+                      child: const Text("Got It!"),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.pushNamed(context, '/create_task');
+          Navigator.pushNamed(context, '/create_task')
+              .then((_) async => await _getTasks());
         },
         child: const Icon(Icons.add),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-        backgroundColor: Colors.teal,
       ),
     );
   }
