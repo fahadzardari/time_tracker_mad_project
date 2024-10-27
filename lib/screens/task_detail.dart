@@ -83,20 +83,21 @@ class _TaskDetailState extends State<TaskDetail> {
   }
 
   String _formatActivityDuration(int seconds) {
-  if (seconds < 60) {
-    return '$seconds seconds';
-  } else if (seconds < 3600) { // Less than 60 minutes
-    final minutes = (seconds / 60).floor();
-    final remainingSeconds = seconds % 60;
-    return '$minutes minutes ${remainingSeconds} seconds';
-  } else { // 60 minutes or more
-    final hours = (seconds / 3600).floor();
-    final minutes = ((seconds % 3600) / 60).floor();
-    final remainingSeconds = seconds % 60;
-    return '$hours hours $minutes minutes ${remainingSeconds} seconds';
+    if (seconds < 60) {
+      return '$seconds seconds';
+    } else if (seconds < 3600) {
+      // Less than 60 minutes
+      final minutes = (seconds / 60).floor();
+      final remainingSeconds = seconds % 60;
+      return '$minutes minutes ${remainingSeconds} seconds';
+    } else {
+      // 60 minutes or more
+      final hours = (seconds / 3600).floor();
+      final minutes = ((seconds % 3600) / 60).floor();
+      final remainingSeconds = seconds % 60;
+      return '$hours hours $minutes minutes ${remainingSeconds} seconds';
+    }
   }
-}
-
 
   String get _formattedTotalTime =>
       _formatDuration(Duration(seconds: _elapsedSeconds));
@@ -111,109 +112,114 @@ class _TaskDetailState extends State<TaskDetail> {
         backgroundColor: Colors.teal,
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Total time display
-            Center(
-              child: Text(
-                _formattedTotalTime,
-                style: TextStyle(
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.teal.shade700,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Total time display
+              Center(
+                child: Text(
+                  _formattedTotalTime,
+                  style: TextStyle(
+                    fontSize: 48,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.teal.shade700,
+                  ),
                 ),
               ),
-            ),
-            SizedBox(height: 10),
-            Center(
-              child: Text(
-                _formattedLapTime,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey,
+              SizedBox(height: 10),
+              Center(
+                child: Text(
+                  _formattedLapTime,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey,
+                  ),
                 ),
               ),
-            ),
-            SizedBox(height: 20),
+              SizedBox(height: 20),
 
-            // Start/Stop buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: _isRunning ? null : _startTimer,
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8.0),
+              // Start/Stop buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: _isRunning ? null : _startTimer,
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     ),
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    child: Text('Start', style: TextStyle(fontSize: 16)),
                   ),
-                  child: Text('Start', style: TextStyle(fontSize: 16)),
-                ),
-                SizedBox(width: 20),
-                ElevatedButton(
-                  onPressed: _isRunning ? _stopTimer : null,
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8.0),
+                  SizedBox(width: 20),
+                  ElevatedButton(
+                    onPressed: _isRunning ? _stopTimer : null,
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     ),
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    child: Text('Stop', style: TextStyle(fontSize: 16)),
                   ),
-                  child: Text('Stop', style: TextStyle(fontSize: 16)),
-                ),
-              ],
-            ),
-            SizedBox(height: 30),
+                ],
+              ),
+              SizedBox(height: 30),
 
-            // Activity logs header
-            Text(
-              'Activity Logs',
-              style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.teal.shade900),
-            ),
-            SizedBox(height: 10),
+              // Activity logs header
+              Text(
+                'Activity Logs',
+                style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.teal.shade900),
+              ),
+              SizedBox(height: 10),
 
-            // Activity logs list
-            Expanded(
-              child: _activityLogs.isEmpty
-                  ? Center(
-                      child: Text('No activities logged yet.',
-                          style: TextStyle(fontSize: 16, color: Colors.grey)))
-                  : ListView.builder(
-                      itemCount: _activityLogs.length,
-                      itemBuilder: (context, index) {
-                        final activity = _activityLogs[index];
-                        return Card(
-                          margin: EdgeInsets.symmetric(vertical: 8.0),
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.0),
-                          ),
-                          child: ListTile(
-                            leading:
-                                Icon(Icons.timer, color: Colors.teal.shade700),
-                            title: Text(
-                              'Start: ${formatter.format(activity.startTime)}',
-                              style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.w500),
+              // Activity logs list
+              Container(
+                height: 300, // Set a height as needed
+                child: _activityLogs.isEmpty
+                    ? Center(
+                        child: Text('No activities logged yet.',
+                            style: TextStyle(fontSize: 16, color: Colors.grey)))
+                    : ListView.builder(
+                        itemCount: _activityLogs.length,
+                        itemBuilder: (context, index) {
+                          final activity = _activityLogs[index];
+                          return Card(
+                            margin: EdgeInsets.symmetric(vertical: 8.0),
+                            elevation: 2,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12.0),
                             ),
-                            subtitle: Text(
-                              'Duration: ${_formatActivityDuration(activity.duration)} \nEnd: ${formatter.format(activity.endTime)}',
-                              style: TextStyle(
-                                  fontSize: 14, color: Colors.grey.shade700),
+                            child: ListTile(
+                              leading: Icon(Icons.timer,
+                                  color: Colors.teal.shade700),
+                              title: Text(
+                                'Start: ${formatter.format(activity.startTime)}',
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.w500),
+                              ),
+                              subtitle: Text(
+                                'Duration: ${_formatActivityDuration(activity.duration)} \nEnd: ${formatter.format(activity.endTime)}',
+                                style: TextStyle(
+                                    fontSize: 14, color: Colors.grey.shade700),
+                              ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ],
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );
